@@ -1,0 +1,12 @@
+# 生产环境
+spring:
+  # DataSource Config
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 此处要配置上线使用的数据库地址，这里还没购买就不修改了
+    url: jdbc:mysql://localhost:3306/clarity
+    username: root
+    password: admin
+  # session 失效时间
+  session:
+    timeout: 86400
