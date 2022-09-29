@@ -19,4 +19,9 @@ public interface UserConstant {
      */
     int ADMIN_ROLE = 1;
 
+    /**
+     * 服务器在 Redis 上的 lock
+     */
+    String SERVER_REDIS_LOCK_KEY = "yupao:user:recommend:";
+
 }

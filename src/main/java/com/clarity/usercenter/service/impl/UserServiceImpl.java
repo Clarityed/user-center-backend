@@ -10,7 +10,6 @@ import com.clarity.usercenter.service.UserService;
 import com.clarity.usercenter.mapper.UserMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import javafx.scene.effect.SepiaTone;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -27,8 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.clarity.usercenter.constant.UserConstant.ADMIN_ROLE;
-import static com.clarity.usercenter.constant.UserConstant.USER_LOGIN_STATE;
+import static com.clarity.usercenter.constant.UserConstant.*;
 
 /**
  * @author Clarity
@@ -221,7 +219,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 判断用户是否登录，登录的话，才能查看推荐用户
         User loginUser = this.getLoginUser(request);
         // 不同的用户缓存不同，为他们设置各自唯一的 key
-        String redisKey = String.format("yupao:user:recommend:%s", loginUser.getId());
+        String redisKey = String.format("%s%s", SERVER_REDIS_LOCK_KEY, loginUser.getId());
         ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         // 逻辑上应该是先读缓存，如果有缓存那么直接返回数据
         Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
