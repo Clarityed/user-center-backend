@@ -1,22 +1,16 @@
 package com.clarity.usercenter.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.clarity.usercenter.model.domain.User;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RList;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.redis.core.ValueOperations;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static com.clarity.usercenter.constant.UserConstant.SERVER_REDIS_LOCK_KEY;
 
 /**
  * 测试 Redisson 是否成功，和 Redisson 与 本地集合使用上的相似

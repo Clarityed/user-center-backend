@@ -123,7 +123,6 @@ public class UserController {
 
     @DeleteMapping("/")
     public BaseResponse<Integer> deleteUser(@RequestBody long id, HttpServletRequest request) {
-
         if (id <= 0) {
             return null;
         }
