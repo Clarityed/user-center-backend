@@ -9,6 +9,7 @@ import com.clarity.usercenter.model.domain.Team;
 import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.model.dto.TeamQuery;
 import com.clarity.usercenter.model.request.TeamAddRequest;
+import com.clarity.usercenter.model.vo.TeamUserVO;
 import com.clarity.usercenter.service.TeamService;
 import com.clarity.usercenter.service.UserService;
 import com.clarity.usercenter.utils.ResultUtils;
@@ -88,14 +89,12 @@ public class TeamController {
     }
 
     @GetMapping("/list")
-    public BaseResponse<List<Team>> listTeams(TeamQuery teamQuery) {
+    public BaseResponse<List<TeamUserVO>> listTeams(TeamQuery teamQuery, HttpServletRequest request) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.PARAM_ERROR);
         }
-        Team team = new Team();
-        BeanUtils.copyProperties(teamQuery, team);
-        QueryWrapper<Team> queryWrapper = new QueryWrapper<>(team);
-        List<Team> teamList = teamService.list(queryWrapper);
+        boolean isAdmin = userService.isAdmin(request);
+        List<TeamUserVO> teamList = teamService.listTeams(teamQuery, isAdmin);
         return ResultUtils.success(teamList);
     }
 

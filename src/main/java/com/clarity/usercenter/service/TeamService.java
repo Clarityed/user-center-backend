@@ -3,6 +3,11 @@ package com.clarity.usercenter.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.clarity.usercenter.model.domain.Team;
 import com.clarity.usercenter.model.domain.User;
+import com.clarity.usercenter.model.dto.TeamQuery;
+import com.clarity.usercenter.model.vo.TeamUserVO;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author Clarity
@@ -19,4 +24,11 @@ public interface TeamService extends IService<Team> {
      */
     long addTeam(Team team, User loginUser);
 
+    /**
+     * 查询队伍列表
+     * @param teamQuery 查询条件
+     * @param isAdmin 用于判断是否为管理员的值
+     * @return 队伍列表
+     */
+    List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin);
 }

@@ -8,15 +8,24 @@ import com.clarity.usercenter.model.domain.Team;
 import com.clarity.usercenter.mapper.TeamMapper;
 import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.model.domain.UserTeam;
+import com.clarity.usercenter.model.dto.TeamQuery;
 import com.clarity.usercenter.model.enums.TeamStatusEnum;
+import com.clarity.usercenter.model.vo.TeamUserVO;
+import com.clarity.usercenter.model.vo.UserVO;
 import com.clarity.usercenter.service.TeamService;
+import com.clarity.usercenter.service.UserService;
 import com.clarity.usercenter.service.UserTeamService;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -33,6 +42,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Resource
     private UserTeamService userTeamService;
+
+    @Resource
+    private UserService userService;
 
     @Override
     // 该方法开启事务，要么都成功提交，要么都失败
@@ -114,6 +126,84 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.PARAM_ERROR, "创建队伍失败");
         }
         return teamId;
+    }
+
+    @Override
+    public List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin) {
+        // 1. 从请求参数中取出队伍名称等条件，如果存在则作为查询条件。
+        QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
+        if (teamQuery != null) {
+            Long id = teamQuery.getId();
+            if (id != null && id > 0) {
+                queryWrapper.eq("id", id);
+            }
+            // 3. 可以通过某个关键词同时对名称和描述查询
+            String searchText = teamQuery.getSearchText();
+            if (StringUtils.isNotBlank(searchText)) {
+                queryWrapper.and(qw -> qw.like("name", searchText).or().like("description", searchText));
+            }
+            String name = teamQuery.getName();
+            // 判断字符串存在，且不能为空字符串
+            if (StringUtils.isNotBlank(name)) {
+                queryWrapper.like("name", name);
+            }
+            String description = teamQuery.getDescription();
+            if (StringUtils.isNotBlank(description)) {
+                queryWrapper.like("description", description);
+            }
+            Integer maxNum = teamQuery.getMaxNum();
+            // 查询最大人数
+            if (maxNum != null && maxNum > 0) {
+                queryWrapper.eq("maxNum", maxNum);
+            }
+            // 根据创建人来查询队伍
+            Long userId = teamQuery.getUserId();
+            if (userId != null && maxNum > 0) {
+                queryWrapper.eq("userId", userId);
+            }
+            // 根据队伍状态查询队伍
+            Integer status = teamQuery.getStatus();
+            TeamStatusEnum teamStatusEnum = TeamStatusEnum.getEnumByValue(status);
+            if (teamStatusEnum == null) {
+                teamStatusEnum = TeamStatusEnum.PUBLIC;
+            }
+            // 4. 只有管理员才能查看加密还有非公开的房间
+            if (!isAdmin && !teamStatusEnum.equals(TeamStatusEnum.PUBLIC)) {
+                throw new BusinessException(ErrorCode.NO_AUTH);
+            }
+            queryWrapper.eq("status", teamStatusEnum.getValue());
+        }
+        // 2. 不展示已过期的队伍，如果队伍未设置过期时间也是能查询出来的
+        // 下面这行代码的意思就算，查询队伍过期时间大于当前时间或者队伍没有设置过期时间，也就算永久保留的队伍
+        queryWrapper.and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
+        List<Team> teamList = this.list(queryWrapper);
+        if (CollectionUtils.isEmpty(teamList)) {
+            return new ArrayList<>();
+        }
+        // 5. 我们这里使用关联查询创建人，写 SQL 自己有时间了自己实现
+        // 如果有多张表建议还是使用 写 SQL 来来查询，因为关联查询多张表，然后数据量有大，性能会很差
+        List<TeamUserVO> teamUserVOList = new ArrayList<>();
+        for (Team team : teamList) {
+            Long userId = team.getUserId();
+            if (userId == null) {
+                continue;
+            }
+            // 得到创建人用户的信息
+            User user = userService.getById(userId);
+            // 用于存放要传给前端的队伍信息
+            TeamUserVO teamUserVO = new TeamUserVO();
+            BeanUtils.copyProperties(team, teamUserVO);
+            // 用户信息脱敏，也就是复制用户信息到封装类中，与上面的一样
+            // 有可能这个用户信息是不存在的
+            if (user != null) {
+                UserVO userVO = new UserVO();
+                BeanUtils.copyProperties(user, userVO);
+                teamUserVO.setCreateUser(userVO);
+            }
+            teamUserVOList.add(teamUserVO);
+        }
+
+        return teamUserVOList;
     }
 }
 
