@@ -10,6 +10,7 @@ import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.model.domain.UserTeam;
 import com.clarity.usercenter.model.dto.TeamQuery;
 import com.clarity.usercenter.model.enums.TeamStatusEnum;
+import com.clarity.usercenter.model.request.TeamUpdateRequest;
 import com.clarity.usercenter.model.vo.TeamUserVO;
 import com.clarity.usercenter.model.vo.UserVO;
 import com.clarity.usercenter.service.TeamService;
@@ -204,6 +205,38 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
 
         return teamUserVOList;
+    }
+
+    @Override
+    public boolean updateTeam(TeamUpdateRequest teamUpdateRequest, User loginUser) {
+        // 1. 判断请求参数是否为空
+        if (teamUpdateRequest == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        // 2. 查询队伍是否存在
+        Long id = teamUpdateRequest.getId();
+        if (id == null || id <= 0) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        Team oldTeam = teamMapper.selectById(id);
+        if (oldTeam == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
+        }
+        // 3. 只有管理员或者队伍的创建者可以修改
+        if (oldTeam.getId() != loginUser.getId() && !userService.isAdmin(loginUser)) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        // 5. 如果队伍状态改为加密，必须要有密码
+        TeamStatusEnum teamStatusEnum = TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus());
+        if (TeamStatusEnum.SECRET.equals(teamStatusEnum)) {
+            if (StringUtils.isNotBlank(teamUpdateRequest.getPassword())) {
+                throw new BusinessException(ErrorCode.NULL_ERROR, "加密类型队伍，密码不能为空");
+            }
+        }
+        // 6. 更新队伍成功
+        Team newTeam = new Team();
+        BeanUtils.copyProperties(teamUpdateRequest, newTeam);
+        return this.updateById(newTeam);
     }
 }
 

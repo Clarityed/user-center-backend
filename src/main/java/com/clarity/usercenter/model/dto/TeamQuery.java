@@ -1,7 +1,5 @@
 package com.clarity.usercenter.model.dto;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.clarity.usercenter.common.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

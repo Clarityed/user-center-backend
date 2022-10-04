@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.clarity.usercenter.model.domain.Team;
 import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.model.dto.TeamQuery;
+import com.clarity.usercenter.model.request.TeamUpdateRequest;
 import com.clarity.usercenter.model.vo.TeamUserVO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,4 +32,12 @@ public interface TeamService extends IService<Team> {
      * @return 队伍列表
      */
     List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin);
+
+    /**
+     * 更新队伍
+     * @param teamUpdateRequest 队伍要更新参数的对象
+     * @param loginUser 当前登录用户
+     * @return 0 -更新失败 1 -更新成功
+     */
+    boolean updateTeam(TeamUpdateRequest teamUpdateRequest, User loginUser);
 }
