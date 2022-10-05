@@ -10,6 +10,7 @@ import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.model.domain.UserTeam;
 import com.clarity.usercenter.model.dto.TeamQuery;
 import com.clarity.usercenter.model.enums.TeamStatusEnum;
+import com.clarity.usercenter.model.request.TeamJoinRequest;
 import com.clarity.usercenter.model.request.TeamUpdateRequest;
 import com.clarity.usercenter.model.vo.TeamUserVO;
 import com.clarity.usercenter.model.vo.UserVO;
@@ -229,7 +230,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         // 5. 如果队伍状态改为加密，必须要有密码
         TeamStatusEnum teamStatusEnum = TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus());
         if (TeamStatusEnum.SECRET.equals(teamStatusEnum)) {
-            if (StringUtils.isNotBlank(teamUpdateRequest.getPassword())) {
+            if (StringUtils.isBlank(teamUpdateRequest.getPassword())) {
                 throw new BusinessException(ErrorCode.NULL_ERROR, "加密类型队伍，密码不能为空");
             }
         }
@@ -237,6 +238,73 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         Team newTeam = new Team();
         BeanUtils.copyProperties(teamUpdateRequest, newTeam);
         return this.updateById(newTeam);
+    }
+
+    @Override
+    public boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser) {
+        // 老样子判断对象是否为空
+        if (teamJoinRequest == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        Long teamId = teamJoinRequest.getTeamId();
+        // 队伍 id 不能为空，或者小于等于 0
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        // 2.1 队伍必须存在
+        Team team = teamMapper.selectById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
+        }
+        // 2.2 未过期的队伍
+        Date expireTime = team.getExpireTime();
+        if (expireTime != null && expireTime.before(new Date())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "队伍已过期");
+        }
+        // 4. 禁止加入私有队伍
+        Integer teamStatus = team.getStatus();
+        TeamStatusEnum teamStatusEnum = TeamStatusEnum.getEnumByValue(teamStatus);
+        if (TeamStatusEnum.PRIVATE.equals(teamStatusEnum)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "禁止加入私有队伍");
+        }
+        // 5. 如果加入的队伍是加密的，必须密码匹配才可以
+        String password = teamJoinRequest.getPassword();
+        if (TeamStatusEnum.SECRET.equals(teamStatusEnum)) {
+            if (StringUtils.isBlank(password) || !password.equals(team.getPassword())) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "密码错误");
+            }
+        }
+        // 1. 用户最多加入 5 个队伍
+        long userId = loginUser.getId();
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("userId", userId);
+        long hasJoinNum = userTeamService.count(userTeamQueryWrapper);
+        if (hasJoinNum >= 5) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "最多创建和加入 5 个队伍");
+        }
+        // 2.3 只能加入未满队伍
+        userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        long teamHasJoinNum = userTeamService.count(userTeamQueryWrapper);
+        if (teamHasJoinNum >= team.getMaxNum()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "队伍人数已满");
+        }
+        // 3. 不能重复加入已加入的队伍
+        userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        userTeamQueryWrapper.eq("userId", userId);
+        long hasJoinTeam = userTeamService.count(userTeamQueryWrapper);
+        if (hasJoinTeam > 0) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "已加入该队伍");
+        }
+        // 6. 新增 队伍-用户 关联信息
+        UserTeam userTeam = new UserTeam();
+        userTeam.setUserId(userId);
+        userTeam.setTeamId(teamId);
+        userTeam.setJoinTime(new Date());
+        userTeam.setCreateTime(new Date());
+        userTeam.setUpdateTime(new Date());
+        return userTeamService.save(userTeam);
     }
 }
 

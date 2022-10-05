@@ -2,6 +2,7 @@ package com.clarity.usercenter.model.request;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -11,7 +12,9 @@ import java.util.Date;
  * @date: 2022年10月04日 14:57
  */
 @Data
-public class TeamUpdateRequest {
+public class TeamUpdateRequest implements Serializable {
+
+    private static final long serialVersionUID = -1037810544430023487L;
 
     /**
      * id
