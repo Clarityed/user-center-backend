@@ -5,6 +5,7 @@ import com.clarity.usercenter.model.domain.Team;
 import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.model.dto.TeamQuery;
 import com.clarity.usercenter.model.request.TeamJoinRequest;
+import com.clarity.usercenter.model.request.TeamQuitRequest;
 import com.clarity.usercenter.model.request.TeamUpdateRequest;
 import com.clarity.usercenter.model.vo.TeamUserVO;
 
@@ -46,7 +47,15 @@ public interface TeamService extends IService<Team> {
      * 用户加入队伍
      * @param teamJoinRequest 加入队伍所需的参数
      * @param loginUser 当前登录用户
-     * @return 0 -加入成功 1 -加入失败
+     * @return 0 -加入失败 1 -加入成功
      */
     boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser);
+
+    /**
+     * 用户退出队伍
+     * @param teamQuitRequest 退出队伍所需的参数
+     * @param loginUser 当前登录用户
+     * @return 0 -退出失败 1 -退出成功
+     */
+    boolean quitTeam(TeamQuitRequest teamQuitRequest, User loginUser);
 }

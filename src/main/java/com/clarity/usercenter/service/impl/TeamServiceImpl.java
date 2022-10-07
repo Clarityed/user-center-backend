@@ -11,6 +11,7 @@ import com.clarity.usercenter.model.domain.UserTeam;
 import com.clarity.usercenter.model.dto.TeamQuery;
 import com.clarity.usercenter.model.enums.TeamStatusEnum;
 import com.clarity.usercenter.model.request.TeamJoinRequest;
+import com.clarity.usercenter.model.request.TeamQuitRequest;
 import com.clarity.usercenter.model.request.TeamUpdateRequest;
 import com.clarity.usercenter.model.vo.TeamUserVO;
 import com.clarity.usercenter.model.vo.UserVO;
@@ -305,6 +306,86 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         userTeam.setCreateTime(new Date());
         userTeam.setUpdateTime(new Date());
         return userTeamService.save(userTeam);
+    }
+
+    @Override
+    public boolean quitTeam(TeamQuitRequest teamQuitRequest, User loginUser) {
+        // 2. 校验请求参数
+        if (teamQuitRequest == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        Long teamId = teamQuitRequest.getTeamId();
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        // 3. 校验队伍是否存在
+        Team team = teamMapper.selectById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
+        }
+        // 4. 校验我是否已经加入队伍
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+        long userId = loginUser.getId();
+        queryWrapper.eq("teamId", teamId);
+        queryWrapper.eq("userId", userId);
+        long count = userTeamService.count(queryWrapper);
+        if (count == 0) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "您还没加入该队伍");
+        }
+        queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("teamId", teamId);
+        long teamHasJoinNum = userTeamService.count(queryWrapper);
+        // 5.1 如果队伍只剩下一个人
+        if (teamHasJoinNum == 1) {
+            // 解散队伍，包括删除队伍信息，和队伍加入记录
+            int teamDeleteById = teamMapper.deleteById(teamId);
+            if (teamDeleteById == 0) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍删除失败");
+            }
+            boolean userTeamRemoveById = userTeamService.remove(queryWrapper);
+            if (!userTeamRemoveById) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍关系删除失败");
+            }
+        } else { // 还有其他人的情况下
+            // 如果是队长退出队伍，权限转移给第二个早加入的用户 ——先来后到
+            if (userId == team.getUserId()) {
+                // 查询已加入队伍的所有用户和加入时间，我们这里使用 id 来判断谁先加入队伍
+                queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("teamId", teamId);
+                queryWrapper.last("order by id limit 2");
+                List<UserTeam> userTeamList = userTeamService.list(queryWrapper);
+                if (userTeamList == null || userTeamList.size() <= 1) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+                }
+                // 更新队伍队长 id
+                UserTeam nextUserTeam = userTeamList.get(1);
+                Long nextTeamLeaderId = nextUserTeam.getUserId();
+                Team updateTeam = new Team();
+                updateTeam.setId(teamId);
+                updateTeam.setUserId(nextTeamLeaderId);
+                int result = teamMapper.updateById(updateTeam);
+                if (result == 0) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队长更新失败");
+                }
+                // 删除前任队长信息
+                queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("teamId", teamId);
+                queryWrapper.eq("userId", userId);
+                boolean removeUserTeam = userTeamService.remove(queryWrapper);
+                if (!removeUserTeam) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除前任队长关系记录失败");
+                }
+            } else {
+                queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("teamId", teamId);
+                queryWrapper.eq("userId", userId);
+                boolean removeUserTeam = userTeamService.remove(queryWrapper);
+                if (!removeUserTeam) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除前任队长关系记录失败");
+                }
+            }
+        }
+        return true;
     }
 }
 

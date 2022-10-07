@@ -10,6 +10,7 @@ import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.model.dto.TeamQuery;
 import com.clarity.usercenter.model.request.TeamAddRequest;
 import com.clarity.usercenter.model.request.TeamJoinRequest;
+import com.clarity.usercenter.model.request.TeamQuitRequest;
 import com.clarity.usercenter.model.request.TeamUpdateRequest;
 import com.clarity.usercenter.model.vo.TeamUserVO;
 import com.clarity.usercenter.service.TeamService;
@@ -126,6 +127,16 @@ public class TeamController {
         }
         User loginUser = userService.getLoginUser(request);
         boolean result = teamService.joinTeam(teamJoinRequest, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    @PostMapping("/quit")
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest, HttpServletRequest request) {
+        if (teamQuitRequest == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.quitTeam(teamQuitRequest, loginUser);
         return ResultUtils.success(result);
     }
 }
