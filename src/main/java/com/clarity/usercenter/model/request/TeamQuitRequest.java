@@ -14,6 +14,7 @@ import java.io.Serializable;
 public class TeamQuitRequest implements Serializable {
 
     private static final long serialVersionUID = -1760591668190270488L;
+
     /**
      * 队伍 id
      */

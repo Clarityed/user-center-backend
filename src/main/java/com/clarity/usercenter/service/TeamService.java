@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.clarity.usercenter.model.domain.Team;
 import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.model.dto.TeamQuery;
+import com.clarity.usercenter.model.request.TeamDeleteRequest;
 import com.clarity.usercenter.model.request.TeamJoinRequest;
 import com.clarity.usercenter.model.request.TeamQuitRequest;
 import com.clarity.usercenter.model.request.TeamUpdateRequest;
@@ -58,4 +59,12 @@ public interface TeamService extends IService<Team> {
      * @return 0 -退出失败 1 -退出成功
      */
     boolean quitTeam(TeamQuitRequest teamQuitRequest, User loginUser);
+
+    /**
+     * 队长解散（删除）队伍
+     * @param teamDeleteRequest 解散队伍所需的参数
+     * @param loginUser 当前登录用户
+     * @return 0 -解散失败 1 -解散成功
+     */
+    boolean deleteTeam(TeamDeleteRequest teamDeleteRequest, User loginUser);
 }
