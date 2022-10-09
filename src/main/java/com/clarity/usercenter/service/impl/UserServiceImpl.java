@@ -187,18 +187,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public boolean isAdmin(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
-        if (user == null || user.getUserRole() != ADMIN_ROLE) {
+        // 如果在这里直接抛出异常的话，后面不是用户调用该方法会立刻停止操作
+/*        if (user == null || user.getUserRole() != ADMIN_ROLE) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在或者用户无权限访问");
-        }
-        return true;
+        }*/
+        return user == null || user.getUserRole() != ADMIN_ROLE;
     }
 
     @Override
     public boolean isAdmin(User loginUser) {
-        if (loginUser == null || loginUser.getUserRole() != ADMIN_ROLE) {
+/*        if (loginUser == null || loginUser.getUserRole() != ADMIN_ROLE) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在或者用户无权限访问");
-        }
-        return true;
+        }*/
+        return loginUser == null || loginUser.getUserRole() != ADMIN_ROLE;
     }
 
     @Override

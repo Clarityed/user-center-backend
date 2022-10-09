@@ -7,18 +7,23 @@ import com.clarity.usercenter.common.ErrorCode;
 import com.clarity.usercenter.exception.BusinessException;
 import com.clarity.usercenter.model.domain.Team;
 import com.clarity.usercenter.model.domain.User;
+import com.clarity.usercenter.model.domain.UserTeam;
 import com.clarity.usercenter.model.dto.TeamQuery;
 import com.clarity.usercenter.model.request.*;
 import com.clarity.usercenter.model.vo.TeamUserVO;
 import com.clarity.usercenter.service.TeamService;
 import com.clarity.usercenter.service.UserService;
+import com.clarity.usercenter.service.UserTeamService;
 import com.clarity.usercenter.utils.ResultUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 队伍接口
@@ -36,6 +41,9 @@ public class TeamController {
 
     @Resource
     private TeamService teamService;
+
+    @Resource
+    private UserTeamService userTeamService;
 
     // 这里就不采用 RestFul 风格的代码形式了，没有太大差别，定义自己的一套规范就可以了
     // 或者在自己公司里，按公司的要求就行，没有一个必须的规范要求
@@ -100,6 +108,7 @@ public class TeamController {
         return ResultUtils.success(teamList);
     }
 
+    // todo 队伍列表展示分页
     @GetMapping("/list/page")
     public BaseResponse<Page<Team>> listTeamsPage(TeamQuery teamQuery) {
         if (teamQuery == null) {
@@ -136,5 +145,47 @@ public class TeamController {
         User loginUser = userService.getLoginUser(request);
         boolean result = teamService.quitTeam(teamQuitRequest, loginUser);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 查看个人已创建队伍
+     * @param teamQuery 查询条件参数
+     * @param request 请求体参数
+     * @return 个人已创建的队伍列表
+     */
+    @GetMapping("/list/my/create")
+    public BaseResponse<List<TeamUserVO>> listMyCreateTeams(TeamQuery teamQuery, HttpServletRequest request) {
+        if (teamQuery == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        long userId = loginUser.getId();
+        teamQuery.setUserId(userId);
+        List<TeamUserVO> teamList = teamService.listTeams(teamQuery, true);
+        return ResultUtils.success(teamList);
+    }
+
+    /**
+     * 查看个人已加入队伍
+     * @param teamQuery 查询条件参数
+     * @param request 请求体参数
+     * @return 个人已加入的队伍列表
+     */
+    @GetMapping("/list/my/join")
+    public BaseResponse<List<TeamUserVO>> listMyJoinTeams(TeamQuery teamQuery, HttpServletRequest request) {
+        if (teamQuery == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        long userId = loginUser.getId();
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("userId", userId);
+        List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
+        Map<Long, List<UserTeam>> listMap = userTeamList.stream()
+                .collect(Collectors.groupingBy(UserTeam::getTeamId));
+        List<Long> idList = new ArrayList<>(listMap.keySet());
+        teamQuery.setIdList(idList);
+        List<TeamUserVO> teamList = teamService.listTeams(teamQuery, true);
+        return ResultUtils.success(teamList);
     }
 }

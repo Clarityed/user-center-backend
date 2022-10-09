@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -62,6 +61,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录不允许创建队伍");
         }
+        // final 在这里的作用逃过编译器的检查，距离太远才使用
         final long userId = loginUser.getId();
         // 3 校验信息
         //  3.1 队伍人数 > 1，且 <= 20
@@ -141,6 +141,11 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             if (id != null && id > 0) {
                 queryWrapper.eq("id", id);
             }
+            // 查询当前用户已加入的队伍判断
+            List<Long> idList = teamQuery.getIdList();
+            if (CollectionUtils.isNotEmpty(idList)) {
+                queryWrapper.in("id", idList);
+            }
             // 3. 可以通过某个关键词同时对名称和描述查询
             String searchText = teamQuery.getSearchText();
             if (StringUtils.isNotBlank(searchText)) {
@@ -162,7 +167,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             }
             // 根据创建人来查询队伍
             Long userId = teamQuery.getUserId();
-            if (userId != null && maxNum > 0) {
+            if (userId != null && userId > 0) {
                 queryWrapper.eq("userId", userId);
             }
             // 根据队伍状态查询队伍
