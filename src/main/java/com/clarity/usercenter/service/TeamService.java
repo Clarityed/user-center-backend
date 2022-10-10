@@ -67,4 +67,12 @@ public interface TeamService extends IService<Team> {
      * @return 0 -解散失败 1 -解散成功
      */
     boolean deleteTeam(TeamDeleteRequest teamDeleteRequest, User loginUser);
+
+    /**
+     * 判断当前用户是否已加入队伍
+     * @param teamList 全部队伍
+     * @param request 请求参数
+     * @return 经过判断的全部队伍，属性已修改
+     */
+    List<TeamUserVO> isUserJoinTeam(List<TeamUserVO> teamList, HttpServletRequest request);
 }

@@ -98,6 +98,7 @@ public class TeamController {
         return ResultUtils.success(team);
     }
 
+    // 这个接口未登录也能使用
     @GetMapping("/list")
     public BaseResponse<List<TeamUserVO>> listTeams(TeamQuery teamQuery, HttpServletRequest request) {
         if (teamQuery == null) {
@@ -105,7 +106,8 @@ public class TeamController {
         }
         boolean isAdmin = userService.isAdmin(request);
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery, isAdmin);
-        return ResultUtils.success(teamList);
+        List<TeamUserVO> hasJoinSignTeamList = teamService.isUserJoinTeam(teamList, request);
+        return ResultUtils.success(hasJoinSignTeamList);
     }
 
     // todo 队伍列表展示分页
@@ -162,7 +164,8 @@ public class TeamController {
         long userId = loginUser.getId();
         teamQuery.setUserId(userId);
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery, true);
-        return ResultUtils.success(teamList);
+        List<TeamUserVO> hasJoinSignTeamList = teamService.isUserJoinTeam(teamList, request);
+        return ResultUtils.success(hasJoinSignTeamList);
     }
 
     /**
@@ -186,6 +189,7 @@ public class TeamController {
         List<Long> idList = new ArrayList<>(listMap.keySet());
         teamQuery.setIdList(idList);
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery, true);
-        return ResultUtils.success(teamList);
+        List<TeamUserVO> hasJoinSignTeamList = teamService.isUserJoinTeam(teamList, request);
+        return ResultUtils.success(hasJoinSignTeamList);
     }
 }
