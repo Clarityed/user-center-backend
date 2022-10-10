@@ -120,4 +120,13 @@ public interface UserService extends IService<User> {
      * @return 经过分页的对象
      */
     Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request);
+
+    /**
+     * 匹配用户
+     *
+     * @param num 显示的用户数
+     * @param loginUser 当前登录用户
+     * @return 显示用户列表
+     */
+    List<User> matchUsers(long num, User loginUser);
 }

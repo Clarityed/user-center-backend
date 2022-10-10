@@ -8,9 +8,12 @@ import com.clarity.usercenter.exception.BusinessException;
 import com.clarity.usercenter.model.domain.User;
 import com.clarity.usercenter.service.UserService;
 import com.clarity.usercenter.mapper.UserMapper;
+import com.clarity.usercenter.utils.AlgorithmUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.description.method.MethodDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -183,7 +186,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return userMapper.deleteById(id);
     }
 
-
     @Override
     public boolean isAdmin(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
@@ -238,6 +240,56 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             log.error("redis set key error");
         }
         return userPage;
+    }
+
+    @Override
+    public List<User> matchUsers(long num, User loginUser) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("id", "tags");
+        queryWrapper.isNotNull("tags");
+        queryWrapper.last("limit 100000");
+        List<User> userList = this.list(queryWrapper);
+        String tags = loginUser.getTags();
+        Gson gson = new Gson();
+        List<String> loginUserTagList = gson.fromJson(tags, new TypeToken<List<String>>() {
+        }.getType());
+/*        // 用户列表的下表 => 相似度
+        SortedMap<Integer, Long> indexDistanceMap = new TreeMap<>();*/
+        List<Pair<User, Long>> list = new ArrayList<>();
+        // 依次计算所有用户和当前用户的相似度
+        for (int i = 0; i < userList.size(); i++) {
+            User user = userList.get(i);
+            String userTags = user.getTags();
+            // 该用户无标签
+            if (StringUtils.isBlank(userTags) || user.getId() == loginUser.getId()) {
+                continue;
+            }
+            List<String> userTagsList = gson.fromJson(userTags, new TypeToken<List<String>>() {
+            }.getType());
+            // 计算得分
+            long distance = AlgorithmUtils.minDistance(loginUserTagList, userTagsList);
+            list.add(new Pair<>(user, distance));
+        }
+        // 按照编辑距离由小到大排序
+        List<Pair<User, Long>> topUserPairList = list.stream()
+                .sorted((a, b) -> (int) (a.getValue() - b.getValue()))
+                .limit(num)
+                .collect(Collectors.toList());
+        // 按积分低到高的顺序排序的 userId 列表
+        List<Long> userIdList = topUserPairList.stream().map(pair -> pair.getKey().getId()).collect(Collectors.toList());
+        /*List<Integer> maxDistanceIndexList = indexDistanceMap.keySet().stream().limit(num).collect(Collectors.toList());
+        List<User> safetyUserList = maxDistanceIndexList.stream().map(index -> getSafetyUser(userList.get(index))).collect(Collectors.toList());*/
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.in("id", userIdList);
+        Map<Long, List<User>> safetyUserIdUserListMap = this.list(userQueryWrapper)
+                .stream()
+                .map(user -> getSafetyUser(user))
+                .collect(Collectors.groupingBy(User::getId));
+        List<User> finalUserList = new ArrayList<>();
+        for (Long userId : userIdList) {
+            finalUserList.add(safetyUserIdUserListMap.get(userId).get(0));
+        }
+        return finalUserList;
     }
 
     /**
