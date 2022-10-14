@@ -1,6 +1,5 @@
 package com.clarity.usercenter.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.clarity.usercenter.common.BaseResponse;
 import com.clarity.usercenter.common.ErrorCode;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.clarity.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 
@@ -29,7 +27,7 @@ import static com.clarity.usercenter.constant.UserConstant.USER_LOGIN_STATE;
  */
 @RestController
 @RequestMapping("/user")
-@CrossOrigin(origins = "http://localhost:5173/", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173/", "http://localhost:8000/"}, allowCredentials = "true")
 public class UserController {
 
     @Resource
@@ -79,7 +77,7 @@ public class UserController {
         return ResultUtils.success(i);
     }
 
-    @GetMapping("current")
+    @GetMapping("/current")
     public BaseResponse<User> getCurrent(HttpServletRequest request) {
         User currentUser = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
         if (currentUser == null) {
@@ -142,9 +140,9 @@ public class UserController {
 
     /**
      * 单个用户匹配
-     * @param num
-     * @param request
-     * @return
+     * @param num 要展示的用户数
+     * @param request 请求体
+     * @return 用户列表
      */
     @GetMapping("/match")
     public BaseResponse<List<User>> matchUsers(long num, HttpServletRequest request) {

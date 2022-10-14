@@ -1,5 +1,4 @@
 package com.clarity.usercenter.service;
-import java.util.Date;
 
 import com.clarity.usercenter.model.domain.User;
 import org.junit.jupiter.api.Assertions;

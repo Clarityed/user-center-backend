@@ -13,7 +13,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.description.method.MethodDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -165,7 +164,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.NO_AUTH, "你不是管理员，无法使用查询功能");
         }
         // StringUtils.isNotBlank判断是空字符串，还空格字符串，还null，如果是返回true
-        QueryWrapper queryWrapper = new QueryWrapper();
+        QueryWrapper<User> queryWrapper = new QueryWrapper();
         if (StringUtils.isNotBlank(username)) {
             queryWrapper.like("username", username);
         }
@@ -193,7 +192,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 /*        if (user == null || user.getUserRole() != ADMIN_ROLE) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在或者用户无权限访问");
         }*/
-        return user == null || user.getUserRole() != ADMIN_ROLE;
+        return user == null || user.getUserRole() == ADMIN_ROLE;
     }
 
     @Override
@@ -201,7 +200,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 /*        if (loginUser == null || loginUser.getUserRole() != ADMIN_ROLE) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在或者用户无权限访问");
         }*/
-        return loginUser == null || loginUser.getUserRole() != ADMIN_ROLE;
+        return loginUser == null || loginUser.getUserRole() == ADMIN_ROLE;
     }
 
     @Override

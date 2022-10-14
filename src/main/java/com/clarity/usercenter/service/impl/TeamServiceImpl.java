@@ -246,13 +246,12 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return this.updateById(newTeam);
     }
 
-    @Override
-    public boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser) {
-        // 老样子判断对象是否为空
-        if (teamJoinRequest == null) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR);
-        }
-        Long teamId = teamJoinRequest.getTeamId();
+    /**
+     * 根据队伍 id 获得该队伍
+     * @param teamId 队伍 id
+     * @return 队伍
+     */
+    private Team getTeamById(Long teamId) {
         // 队伍 id 不能为空，或者小于等于 0
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAM_ERROR);
@@ -262,6 +261,17 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (team == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
         }
+        return team;
+    }
+
+    @Override
+    public boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser) {
+        // 老样子判断对象是否为空
+        if (teamJoinRequest == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        Long teamId = teamJoinRequest.getTeamId();
+        Team team = this.getTeamById(teamId);
         // 2.2 未过期的队伍
         Date expireTime = team.getExpireTime();
         if (expireTime != null && expireTime.before(new Date())) {
@@ -321,14 +331,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.PARAM_ERROR);
         }
         Long teamId = teamQuitRequest.getTeamId();
-        if (teamId == null || teamId <= 0) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR);
-        }
-        // 3. 校验队伍是否存在
-        Team team = teamMapper.selectById(teamId);
-        if (team == null) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
-        }
+        Team team = this.getTeamById(teamId);
         // 4. 校验我是否已经加入队伍
         QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
         long userId = loginUser.getId();
@@ -374,24 +377,31 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                     throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队长更新失败");
                 }
                 // 删除前任队长信息
-                queryWrapper = new QueryWrapper<>();
-                queryWrapper.eq("teamId", teamId);
-                queryWrapper.eq("userId", userId);
-                boolean removeUserTeam = userTeamService.remove(queryWrapper);
+                boolean removeUserTeam = this.deleteOldTeamMasterInfo(teamId, userId);
                 if (!removeUserTeam) {
                     throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除前任队长关系记录失败");
                 }
             } else {
-                queryWrapper = new QueryWrapper<>();
-                queryWrapper.eq("teamId", teamId);
-                queryWrapper.eq("userId", userId);
-                boolean removeUserTeam = userTeamService.remove(queryWrapper);
+                boolean removeUserTeam = this.deleteOldTeamMasterInfo(teamId, userId);
                 if (!removeUserTeam) {
                     throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除前任队长关系记录失败");
                 }
             }
         }
         return true;
+    }
+
+    /**
+     * 删除老队长的队伍关系记录
+     * @param teamId 队伍 id
+     * @param userId 用户 id
+     * @return 1 -删除成功 0- 删除失败
+     */
+    private boolean deleteOldTeamMasterInfo(Long teamId, Long userId) {
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        userTeamQueryWrapper.eq("userId", userId);
+        return userTeamService.remove(userTeamQueryWrapper);
     }
 
     @Override
@@ -445,7 +455,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 boolean hasJoin = hasJoinTeamIdSet.contains(team.getId());
                 team.setHasJoin(hasJoin);
             });
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return teamList;
     }
 }

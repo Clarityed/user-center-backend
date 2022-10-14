@@ -3,7 +3,7 @@ import java.util.Date;
 
 import com.clarity.usercenter.mapper.UserMapper;
 import com.clarity.usercenter.model.domain.User;
-import org.springframework.scheduling.annotation.Scheduled;
+// import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 

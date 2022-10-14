@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +42,9 @@ public class PreCacheJob {
     // 要是全部用户肯定要分时间段进行缓存更新
     // 但我们这个系统就指定重点用户缓存预热
     // 以后这里会进行优化的
-    private List<Long> mainUserList = Arrays.asList(2L);
+    // private List<Long> mainUserList = Arrays.asList(2L);
+    // Collections.singletonList 这个List中只能存放一个元素，多一个或者少一个都会导致异常。
+    private final List<Long> mainUserList = Collections.singletonList(2L);
 
     @Scheduled(cron = "0 15 16 * * *")
     public void doCacheRecommendUser() {

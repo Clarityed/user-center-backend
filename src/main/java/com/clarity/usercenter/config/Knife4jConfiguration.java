@@ -24,7 +24,7 @@ public class Knife4jConfiguration {
     @Bean(value = "dockerBean")
     public Docket dockerBean() {
         //指定使用Swagger2规范
-        Docket docket=new Docket(DocumentationType.SWAGGER_2)
+        return new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(new ApiInfoBuilder()
                         //描述字段支持Markdown语法
                         .title("用户中心")
@@ -37,6 +37,5 @@ public class Knife4jConfiguration {
                 .apis(RequestHandlerSelectors.basePackage("com.clarity.usercenter.controller"))
                 .paths(PathSelectors.any())
                 .build();
-        return docket;
     }
 }

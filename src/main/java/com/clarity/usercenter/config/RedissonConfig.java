@@ -32,8 +32,7 @@ public class RedissonConfig {
         // 设置 redis 3 库专门选择一个干净的库存放分布式信息
         String redisAddress = String.format("redis://%s:%s", host, port);
         config.useSingleServer().setAddress(redisAddress).setDatabase(3);
-        RedissonClient redissonClient = Redisson.create(config);
-        return redissonClient;
+        return Redisson.create(config);
     }
 
 }
