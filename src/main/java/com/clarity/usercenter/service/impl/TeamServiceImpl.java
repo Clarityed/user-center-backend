@@ -176,13 +176,14 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 teamStatusEnum = TeamStatusEnum.PUBLIC;
             }
             // 4. 只有管理员才能查看加密还有非公开的房间
-            if (!isAdmin && !teamStatusEnum.equals(TeamStatusEnum.PUBLIC)) {
+            // 发现问题：普通用户无法查看加密队伍，现在改为普通用户只有私密队伍无法查看
+            if (!isAdmin && teamStatusEnum.equals(TeamStatusEnum.PRIVATE)) {
                 throw new BusinessException(ErrorCode.NO_AUTH);
             }
             queryWrapper.eq("status", teamStatusEnum.getValue());
         }
         // 2. 不展示已过期的队伍，如果队伍未设置过期时间也是能查询出来的
-        // 下面这行代码的意思就算，查询队伍过期时间大于当前时间或者队伍没有设置过期时间，也就算永久保留的队伍
+        // 下面这行代码的意思就是，查询队伍过期时间大于当前时间或者队伍没有设置过期时间，也就算永久保留的队伍
         queryWrapper.and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
         List<Team> teamList = this.list(queryWrapper);
         if (CollectionUtils.isEmpty(teamList)) {
