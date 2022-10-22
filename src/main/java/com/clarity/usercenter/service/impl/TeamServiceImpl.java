@@ -442,6 +442,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Override
     public List<TeamUserVO> isUserJoinTeam(List<TeamUserVO> teamList, HttpServletRequest request) {
+        // 1. 获取队伍 id 集合
         List<Long> teamIdList = teamList.stream().map(TeamUserVO::getId).collect(Collectors.toList());
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
         try {
@@ -459,6 +460,11 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         } catch (Exception e) {
             e.printStackTrace();
         }
+        QueryWrapper<UserTeam> userJoinTeamQueryWrapper = new QueryWrapper<>();
+        userJoinTeamQueryWrapper.in("teamId", teamIdList);
+        List<UserTeam> userTeamList = userTeamService.list(userJoinTeamQueryWrapper);
+        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        teamList.forEach(team -> team.setHasJoinNumber(teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size()));
         return teamList;
     }
 }
