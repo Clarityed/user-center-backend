@@ -96,7 +96,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.PARAM_ERROR, "用户编码重复");
         }
         // 2. 加密，这里用简单的单向加密，采用Spring提供的加密工具
-
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
         // 3. 插入数据
         User user = new User();
